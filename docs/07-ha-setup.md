@@ -22,17 +22,19 @@ cp -r custom_components/midea_washer /config/custom_components/
 2. Reinicie o Home Assistant.
 3. **Settings → Devices & services → Add integration → Midea Washer (LAN)**.
 
-## Credenciais V3
+## Setup automático (v0.2+)
 
-Se o aparelho for protocol 3, precisa de `token` e `key` (hex).
+No config flow:
 
-Formas comuns de obter:
+1. Email + senha do **MSmartHome / SmartHome**
+2. Escolha a lavadora da conta
+3. A integração busca `token`/`key` na nuvem, descobre IP na LAN e preenche modelo/tipo
 
-1. Integração oficial **Midea** do HA (cloud só na configuração)
-2. Ferramentas/community que logam no MSmartHome e listam devices
-3. Captura do app (mitm) — fora do escopo deste repo
+Só pede IP manual se a descoberta UDP não achar o aparelho.
 
-Cole token e key sem espaços.
+A sessão (conta) fica salva no config entry. Se o handshake V3 falhar depois, o coordinator tenta renovar token/key sozinho.
+
+Controle depois do setup é **local** (TCP 6444). Feche o app enquanto o HA usa a máquina.
 
 ## Checklist
 

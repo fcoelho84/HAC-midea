@@ -9,6 +9,8 @@ CONF_PROTOCOL = "protocol"
 CONF_TOKEN = "token"
 CONF_KEY = "key"
 CONF_MODEL = "model"
+CONF_ACCOUNT = "account"
+CONF_PASSWORD = "password"
 
 DEFAULT_PORT = 6444
 DEFAULT_PROTOCOL = 3

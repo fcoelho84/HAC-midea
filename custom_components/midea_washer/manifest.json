@@ -7,5 +7,5 @@
   "issue_tracker": "https://github.com/fcoelho84/HAC-midea/issues",
   "iot_class": "local_polling",
   "requirements": ["pycryptodome>=3.19.0"],
-  "version": "0.1.0"
+  "version": "0.2.0"
 }

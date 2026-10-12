@@ -2,44 +2,34 @@
   "config": {
     "step": {
       "user": {
-        "menu_options": {
-          "discover": "Discover washers on LAN",
-          "manual": "Configure manually"
+        "title": "Login MSmartHome",
+        "description": "Use the same email/password as the {app} app. Token, key, model and host are filled automatically.",
+        "data": {
+          "username": "Email / account",
+          "password": "Password"
         }
       },
-      "discover": {
+      "select_device": {
         "title": "Select washer",
         "data": {
-          "device_id": "Device"
+          "device_id": "Washer"
         }
       },
-      "manual": {
-        "title": "Manual washer setup",
+      "host": {
+        "title": "Washer IP",
+        "description": "Could not find {name} ({device_id}) on LAN. Enter its IP. Keep MSmartHome closed.",
         "data": {
-          "host": "IP address",
-          "device_id": "Device ID",
-          "device_type": "Device type",
-          "port": "Port",
-          "protocol": "Protocol version",
-          "model": "Model",
-          "token": "Token (V3)",
-          "key": "Key (V3)"
-        }
-      },
-      "credentials": {
-        "title": "V3 credentials",
-        "description": "Device {device_id} at {host} needs cloud token/key for local V3 auth.",
-        "data": {
-          "token": "Token",
-          "key": "Key"
+          "host": "IP address"
         }
       }
     },
     "error": {
-      "cannot_connect": "Cannot connect. Check IP, protocol, token/key, and that MSmartHome is closed."
+      "invalid_auth": "Login failed. Check email/password for MSmartHome.",
+      "cannot_connect": "LAN connect failed. Check IP, close the app, and retry."
     },
     "abort": {
-      "no_devices_found": "No washers found on LAN.",
+      "no_washers_in_account": "No washer/dryer found in this cloud account.",
+      "token_failed": "Could not fetch local token/key from Midea cloud.",
       "already_configured": "Device already configured."
     }
   }

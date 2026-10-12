@@ -18,11 +18,16 @@ Comece em [docs/00-overview.md](docs/00-overview.md).
 
 ## Instalação rápida
 
+HACS: repo `fcoelho84/HAC-midea` → release **0.2.0**+.
+
+Ou:
+
 ```bash
 cp -r custom_components/midea_washer /config/custom_components/
 ```
 
-Reinicie o HA → adicione **Midea Washer (LAN)**.
+Reinicie o HA → **Midea Washer (LAN)** → login MSmartHome → escolha a lavadora.  
+Token / key / host / modelo são preenchidos sozinhos.
 
 ## Entidades HA (lavadora)
 
