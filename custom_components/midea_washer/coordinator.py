@@ -57,12 +57,10 @@ class MideaWasherCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(str(err)) from err
 
     def _refresh(self):
-        if not self.client.connected:
-            self.client.connect()
-            return self.client.status
         try:
             return self.client.refresh()
-        except OSError:
+        except (OSError, TimeoutError, ConnectionError, ValueError):
+            self.client.close()
             self.client.connect()
             return self.client.status
 

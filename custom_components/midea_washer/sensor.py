@@ -12,24 +12,21 @@ from .const import DOMAIN
 from .coordinator import MideaWasherCoordinator
 from .entity import MideaWasherEntity
 
+# Controles principais ficam em switch/select/button.
+# Aqui só status de leitura + extras.
 _SENSORS = (
-    ("status", "Status", None, None, None),
-    ("mode", "Mode", None, None, None),
-    ("program", "Program", None, None, None),
-    ("progress", "Progress", None, None, None),
-    ("water_level", "Water Level", None, None, None),
-    ("temperature", "Wash Temperature", None, None, None),
-    ("dehydration_speed", "Spin Speed", None, None, None),
-    ("wash_time", "Wash Time Level", None, SensorStateClass.MEASUREMENT, None),
-    ("wash_time_value", "Wash Time Value", SensorDeviceClass.DURATION, SensorStateClass.MEASUREMENT, "min"),
-    ("dehydration_time", "Spin Time Level", None, SensorStateClass.MEASUREMENT, None),
-    ("dehydration_time_value", "Spin Time Value", SensorDeviceClass.DURATION, SensorStateClass.MEASUREMENT, "min"),
-    ("time_remaining", "Time Remaining", SensorDeviceClass.DURATION, SensorStateClass.MEASUREMENT, "min"),
-    ("detergent", "Detergent", None, SensorStateClass.MEASUREMENT, None),
-    ("softener", "Softener", None, SensorStateClass.MEASUREMENT, None),
-    ("stains", "Stains", None, SensorStateClass.MEASUREMENT, None),
-    ("dirty_degree", "Dirty Degree", None, SensorStateClass.MEASUREMENT, None),
-    ("washing_data_hex", "Washing Data", None, None, None),
+    ("status", "Status", "mdi:information", None, None, None, False),
+    ("progress", "Etapa do ciclo", "mdi:progress-helper", None, None, None, False),
+    ("time_remaining", "Tempo restante", "mdi:timer-sand", SensorDeviceClass.DURATION, SensorStateClass.MEASUREMENT, "min", False),
+    ("wash_time_value", "Tempo de lavagem", "mdi:timer", SensorDeviceClass.DURATION, SensorStateClass.MEASUREMENT, "min", False),
+    ("dehydration_time_value", "Tempo de centrifugação", "mdi:timer", SensorDeviceClass.DURATION, SensorStateClass.MEASUREMENT, "min", False),
+    ("detergent", "Detergente", "mdi:bottle-tonic", None, SensorStateClass.MEASUREMENT, None, False),
+    ("softener", "Amaciante", "mdi:bottle-tonic-outline", None, SensorStateClass.MEASUREMENT, None, False),
+    ("stains", "Manchas", "mdi:blot", None, SensorStateClass.MEASUREMENT, None, True),
+    ("dirty_degree", "Sujeira", "mdi:gauge", None, SensorStateClass.MEASUREMENT, None, True),
+    ("wash_time", "Nível tempo lavagem", "mdi:numeric", None, SensorStateClass.MEASUREMENT, None, True),
+    ("dehydration_time", "Nível tempo centrifugação", "mdi:numeric", None, SensorStateClass.MEASUREMENT, None, True),
+    ("washing_data_hex", "Dados brutos do ciclo", "mdi:hexadecimal", None, None, None, True),
 )
 
 
@@ -39,20 +36,22 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: MideaWasherCoordinator = hass.data[DOMAIN][entry.entry_id]
-    entities = [
-        WasherSensor(
-            coordinator,
-            entry,
-            key,
-            name,
-            device_class,
-            state_class,
-            unit,
-            diagnostic=(key == "washing_data_hex"),
-        )
-        for key, name, device_class, state_class, unit in _SENSORS
-    ]
-    async_add_entities(entities)
+    async_add_entities(
+        [
+            WasherSensor(
+                coordinator,
+                entry,
+                key,
+                name,
+                icon,
+                device_class,
+                state_class,
+                unit,
+                diagnostic,
+            )
+            for key, name, icon, device_class, state_class, unit, diagnostic in _SENSORS
+        ]
+    )
 
 
 class WasherSensor(MideaWasherEntity, SensorEntity):
@@ -62,12 +61,14 @@ class WasherSensor(MideaWasherEntity, SensorEntity):
         entry: ConfigEntry,
         key: str,
         name: str,
+        icon: str,
         device_class,
         state_class,
         unit,
         diagnostic: bool = False,
     ) -> None:
         super().__init__(coordinator, entry, key, name)
+        self._attr_icon = icon
         self._attr_device_class = device_class
         self._attr_state_class = state_class
         self._attr_native_unit_of_measurement = unit

@@ -1,5 +1,5 @@
 DOMAIN = "midea_washer"
-PLATFORMS = ["sensor", "switch", "select", "number"]
+PLATFORMS = ["sensor", "switch", "select", "number", "button"]
 
 CONF_DEVICE_ID = "device_id"
 CONF_DEVICE_TYPE = "device_type"
@@ -28,6 +28,33 @@ WASHER_TYPES = {
 
 OEM_COMMON_AES_KEY_HEX = "f526b03e0b591a6eeddf4fe77b9517fa"
 LAN_SIGN_KEY = b"xhdiwjnchekd4d512chdjx5d8e4c394D2D7S"
+
+# Programas comuns no UI; o valor atual da máquina sempre entra na lista.
+COMMON_PROGRAMS = (
+    "cotton",
+    "eco",
+    "fast_wash",
+    "quick_wash",
+    "mixed_wash",
+    "wool",
+    "silk",
+    "baby_clothes",
+    "sport_clothes",
+    "jeans",
+    "jean",
+    "shirt",
+    "cold_wash",
+    "soft_wash",
+    "intelligent",
+    "standard",
+    "wash_and_dry",
+    "single_dehydration",
+    "rinsing_dehydration",
+    "self_wash_5",
+    "steam_care",
+    "sterilize_wash",
+    "default",
+)
 
 STATUS_MAP = {
     0: "idle",

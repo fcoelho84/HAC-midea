@@ -26,25 +26,32 @@ Layout de status alinhado a `midealocal` DB (`0xDB`) / body UART.
 
 ## Controles (escrita remota)
 
-| Entity | Tipo | Ação |
-|--------|------|------|
-| `power` | switch | Liga/desliga |
-| `start` | switch | Start / pause |
-| `program` | select | Programa (cotton, eco, wool, …) |
-| `mode` | select | Modo |
-| `water_level` | select | Nível de água |
-| `temperature` | select | Temperatura |
-| `dehydration_speed` | select | Centrifugação RPM |
-| `wash_time` | number | Nível tempo lavagem |
-| `dehydration_time` | number | Nível tempo centrifugação |
-| `detergent` | number | Nível detergente |
-| `softener` | number | Nível amaciante |
+| Entity | Tipo | Nome UI | Ação |
+|--------|------|---------|------|
+| `power` | switch | Energia | Liga/desliga |
+| `start` | switch | Ciclo em andamento | Inicia / pausa |
+| `btn_power_on` | button | Ligar | Liga |
+| `btn_power_off` | button | Desligar | Desliga (sem esperar ACK longo) |
+| `btn_start` | button | Iniciar | Começa ciclo |
+| `btn_pause` | button | Pausar | Pausa ciclo |
+| `btn_refresh` | button | Atualizar status | Query LAN |
+| `program` | select | Programa | Programa (lista comum + atual) |
+| `mode` | select | Modo | Modo |
+| `water_level` | select | Nível de água | Nível |
+| `temperature` | select | Temperatura | Temp |
+| `dehydration_speed` | select | Centrifugação | RPM |
+| `wash_time` | number | Ajuste tempo lavagem | Nível |
+| `dehydration_time` | number | Ajuste tempo centrifugação | Nível |
+| `detergent` | number | Ajuste detergente | Nível |
+| `softener` | number | Ajuste amaciante | Nível |
 
 Fluxo típico remoto:
 
-1. Power on
-2. Ajuste program / water / temp / spin / tempos
-3. Start on
+1. Ligar (ou Energia on)
+2. Programa / água / temp / centrifugação
+3. Iniciar
+
+Comandos set **não bloqueiam** esperando ACK (evita `timed out` no HA). Status otimista + refresh curto.
 
 Params vão no bloco `washing_data` (13 bytes). Set usa frame `0x02` com `FF FF` + dados (sem forçar start). Start usa `FF 01` + `washing_data`.
 

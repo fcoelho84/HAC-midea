@@ -8,10 +8,10 @@ from .coordinator import MideaWasherCoordinator
 from .entity import MideaWasherEntity
 
 _NUMBERS = (
-    ("wash_time", "Wash Time Level", 0, 30, 1),
-    ("dehydration_time", "Spin Time Level", 0, 30, 1),
-    ("detergent", "Detergent Level", 0, 5, 1),
-    ("softener", "Softener Level", 0, 5, 1),
+    ("wash_time", "Ajuste tempo lavagem", "mdi:timer-plus", 0, 30, 1),
+    ("dehydration_time", "Ajuste tempo centrifugação", "mdi:timer-plus-outline", 0, 30, 1),
+    ("detergent", "Ajuste detergente", "mdi:bottle-tonic-plus", 0, 5, 1),
+    ("softener", "Ajuste amaciante", "mdi:bottle-tonic-plus-outline", 0, 5, 1),
 )
 
 
@@ -23,14 +23,14 @@ async def async_setup_entry(
     coordinator: MideaWasherCoordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities(
         [
-            WasherNumber(coordinator, entry, key, name, minimum, maximum, step)
-            for key, name, minimum, maximum, step in _NUMBERS
+            WasherNumber(coordinator, entry, key, name, icon, minimum, maximum, step)
+            for key, name, icon, minimum, maximum, step in _NUMBERS
         ]
     )
 
 
 class WasherNumber(MideaWasherEntity, NumberEntity):
-    _attr_mode = NumberMode.AUTO
+    _attr_mode = NumberMode.SLIDER
 
     def __init__(
         self,
@@ -38,11 +38,13 @@ class WasherNumber(MideaWasherEntity, NumberEntity):
         entry: ConfigEntry,
         key: str,
         name: str,
+        icon: str,
         minimum: float,
         maximum: float,
         step: float,
     ) -> None:
         super().__init__(coordinator, entry, key, name)
+        self._attr_icon = icon
         self._attr_native_min_value = minimum
         self._attr_native_max_value = maximum
         self._attr_native_step = step
@@ -60,4 +62,4 @@ class WasherNumber(MideaWasherEntity, NumberEntity):
             self._key,
             int(value),
         )
-        await self.coordinator.async_request_refresh()
+        self.coordinator.async_set_updated_data(dict(self.coordinator.client.status))
