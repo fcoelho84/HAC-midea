@@ -1,0 +1,36 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "MSmartHome login",
+        "description": "Same account as {app}. Token/key/IP/model are fetched automatically. Control after that is fully local (long TCP sync).",
+        "data": {
+          "username": "Email / account",
+          "password": "Password"
+        }
+      },
+      "select_device": {
+        "title": "Choose washer",
+        "data": {
+          "device_id": "Appliance"
+        }
+      },
+      "host": {
+        "title": "Washer IP",
+        "description": "Could not find {name} ({device_id}) via broadcast. Enter the IP. Close the MSmartHome app.",
+        "data": {
+          "host": "IP address"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Login failed. Check MSmartHome email/password.",
+      "cannot_connect": "Local TCP failed. Check IP, close the app, try again."
+    },
+    "abort": {
+      "no_washers_in_account": "No washer/dryer on this account.",
+      "token_failed": "Could not fetch token/key from Midea cloud.",
+      "already_configured": "Device already configured."
+    }
+  }
+}

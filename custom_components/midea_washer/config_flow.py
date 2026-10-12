@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 from typing import Any
 
 import voluptuous as vol
+from midealan.discover import discover
 
 from homeassistant import config_entries
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -11,27 +14,44 @@ from .const import (
     CONF_ACCOUNT,
     CONF_DEVICE_ID,
     CONF_DEVICE_TYPE,
+    CONF_HOST,
     CONF_KEY,
     CONF_MODEL,
+    CONF_NAME,
+    CONF_PORT,
     CONF_PROTOCOL,
+    CONF_SUBTYPE,
     CONF_TOKEN,
     DEFAULT_PORT,
     DEFAULT_PROTOCOL,
     DOMAIN,
     WASHER_TYPES,
 )
-from .protocol import WasherClient, discover
+from .device import create_device
 from .protocol.cloud import MSmartHomeCloud
 
 
+def _lan_match(lan: dict[Any, Any], device_id: int) -> dict[str, Any] | None:
+    if device_id in lan:
+        return lan[device_id]
+    for item in lan.values():
+        if not isinstance(item, dict):
+            continue
+        found = item.get("device_id", item.get("id"))
+        if found is not None and int(found) == device_id:
+            return item
+    return None
+
+
 class MideaWasherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    VERSION = 2
+    VERSION = 3
 
     def __init__(self) -> None:
         self._cloud: MSmartHomeCloud | None = None
         self._washers: dict[int, dict[str, Any]] = {}
         self._account = ""
         self._password = ""
+        self._pending: dict[str, Any] = {}
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -44,8 +64,7 @@ class MideaWasherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 user_input[CONF_USERNAME].strip(),
                 user_input[CONF_PASSWORD],
             )
-            ok = await cloud.login()
-            if not ok:
+            if not await cloud.login():
                 errors["base"] = "invalid_auth"
             else:
                 washers = await cloud.list_washers()
@@ -100,71 +119,85 @@ class MideaWasherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         token, key = keys
 
         lan = await self.hass.async_add_executor_job(discover)
-        match = next((d for d in lan if int(d["device_id"]) == device_id), None)
+        match = _lan_match(lan if isinstance(lan, dict) else {}, device_id)
+
+        base = {
+            CONF_DEVICE_ID: device_id,
+            CONF_DEVICE_TYPE: info["device_type"],
+            CONF_MODEL: info.get("model") or "",
+            CONF_NAME: info.get("name") or f"Washer {device_id}",
+            CONF_TOKEN: token,
+            CONF_KEY: key,
+            CONF_PROTOCOL: DEFAULT_PROTOCOL,
+            CONF_PORT: DEFAULT_PORT,
+            CONF_SUBTYPE: 0,
+            CONF_ACCOUNT: self._account,
+            CONF_PASSWORD: self._password,
+        }
+
         if match is None:
-            self.context["auto"] = {
-                CONF_DEVICE_ID: device_id,
-                CONF_DEVICE_TYPE: info["device_type"],
-                CONF_MODEL: info.get("model") or "",
-                CONF_TOKEN: token,
-                CONF_KEY: key,
-                CONF_PROTOCOL: DEFAULT_PROTOCOL,
-                CONF_PORT: DEFAULT_PORT,
-                CONF_ACCOUNT: self._account,
-                CONF_PASSWORD: self._password,
-                "name": info["name"],
-            }
+            self._pending = base
+            return await self.async_step_host()
+
+        host = match.get("ip_address") or match.get("host")
+        if not host:
+            self._pending = base
             return await self.async_step_host()
 
         data = {
-            CONF_HOST: match["host"],
-            CONF_PORT: match.get("port", DEFAULT_PORT),
-            CONF_DEVICE_ID: device_id,
-            CONF_DEVICE_TYPE: info["device_type"],
+            **base,
+            CONF_HOST: host,
+            CONF_PORT: int(match.get("port", DEFAULT_PORT)),
+            CONF_DEVICE_TYPE: int(
+                match.get("type", match.get("device_type", info["device_type"]))
+            ),
+            CONF_PROTOCOL: int(match.get("protocol", DEFAULT_PROTOCOL)),
+            CONF_SUBTYPE: int(match.get("subtype", 0) or 0),
             CONF_MODEL: info.get("model") or match.get("model") or "",
-            CONF_PROTOCOL: match.get("protocol", DEFAULT_PROTOCOL),
-            CONF_TOKEN: token,
-            CONF_KEY: key,
-            CONF_ACCOUNT: self._account,
-            CONF_PASSWORD: self._password,
-            "name": info["name"],
         }
         return await self._create_entry(data)
 
     async def async_step_host(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Only IP if LAN discovery missed the washer."""
-        auto = self.context.get("auto") or {}
+        auto = self._pending
         errors: dict[str, str] = {}
         if user_input is not None:
             data = {**auto, CONF_HOST: user_input[CONF_HOST].strip()}
             return await self._create_entry(data)
-
         return self.async_show_form(
             step_id="host",
             data_schema=vol.Schema({vol.Required(CONF_HOST): str}),
             errors=errors,
             description_placeholders={
-                "name": str(auto.get("name", "washer")),
+                "name": str(auto.get(CONF_NAME, "washer")),
                 "device_id": str(auto.get(CONF_DEVICE_ID, "")),
             },
         )
 
     async def _create_entry(self, data: dict[str, Any]) -> FlowResult:
-        client = WasherClient(
-            device_id=int(data[CONF_DEVICE_ID]),
-            device_type=int(data[CONF_DEVICE_TYPE]),
-            host=data[CONF_HOST],
-            port=int(data.get(CONF_PORT, DEFAULT_PORT)),
-            protocol=int(data.get(CONF_PROTOCOL, DEFAULT_PROTOCOL)),
-            token=data.get(CONF_TOKEN, ""),
-            key=data.get(CONF_KEY, ""),
-        )
+        def _probe() -> None:
+            device = create_device(
+                name=str(data.get(CONF_NAME) or data[CONF_DEVICE_ID]),
+                device_id=int(data[CONF_DEVICE_ID]),
+                device_type=int(data[CONF_DEVICE_TYPE]),
+                ip_address=str(data[CONF_HOST]),
+                port=int(data.get(CONF_PORT, DEFAULT_PORT)),
+                token=str(data.get(CONF_TOKEN, "")),
+                key=str(data.get(CONF_KEY, "")),
+                protocol=int(data.get(CONF_PROTOCOL, DEFAULT_PROTOCOL)),
+                model=str(data.get(CONF_MODEL, "") or ""),
+                subtype=int(data.get(CONF_SUBTYPE, 0) or 0),
+            )
+            ok = bool(device.connect(check_protocol=True))
+            device.close_socket()
+            if not ok:
+                raise ConnectionError("connect failed")
+
         try:
-            await self.hass.async_add_executor_job(client.connect)
+            await self.hass.async_add_executor_job(_probe)
         except Exception:
-            self.context["auto"] = data
+            self._pending = data
             return self.async_show_form(
                 step_id="host",
                 data_schema=vol.Schema(
@@ -176,14 +209,12 @@ class MideaWasherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ),
                 errors={"base": "cannot_connect"},
                 description_placeholders={
-                    "name": str(data.get("name", "washer")),
+                    "name": str(data.get(CONF_NAME, "washer")),
                     "device_id": str(data.get(CONF_DEVICE_ID, "")),
                 },
             )
-        finally:
-            await self.hass.async_add_executor_job(client.close)
 
-        title = data.get("name") or WASHER_TYPES.get(
+        title = data.get(CONF_NAME) or WASHER_TYPES.get(
             int(data[CONF_DEVICE_TYPE]), "Midea Washer"
         )
         return self.async_create_entry(

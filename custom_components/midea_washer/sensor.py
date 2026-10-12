@@ -1,33 +1,15 @@
-from homeassistant.components.sensor import (
-    SensorDeviceClass,
-    SensorEntity,
-    SensorStateClass,
-)
+from __future__ import annotations
+
+from typing import Any
+
+from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory, UnitOfTime
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
-from .coordinator import MideaWasherCoordinator
+from .const import DOMAIN, MINUTE_KEYS, PRIMARY_SENSORS, SENSOR_LABELS, SENSOR_SKIP
 from .entity import MideaWasherEntity
-
-# Controles principais ficam em switch/select/button.
-# Aqui só status de leitura + extras.
-_SENSORS = (
-    ("status", "Status", "mdi:information", None, None, None, False),
-    ("progress", "Etapa do ciclo", "mdi:progress-helper", None, None, None, False),
-    ("time_remaining", "Tempo restante", "mdi:timer-sand", SensorDeviceClass.DURATION, SensorStateClass.MEASUREMENT, "min", False),
-    ("wash_time_value", "Tempo de lavagem", "mdi:timer", SensorDeviceClass.DURATION, SensorStateClass.MEASUREMENT, "min", False),
-    ("dehydration_time_value", "Tempo de centrifugação", "mdi:timer", SensorDeviceClass.DURATION, SensorStateClass.MEASUREMENT, "min", False),
-    ("detergent", "Detergente", "mdi:bottle-tonic", None, SensorStateClass.MEASUREMENT, None, False),
-    ("softener", "Amaciante", "mdi:bottle-tonic-outline", None, SensorStateClass.MEASUREMENT, None, False),
-    ("stains", "Manchas", "mdi:blot", None, SensorStateClass.MEASUREMENT, None, True),
-    ("dirty_degree", "Sujeira", "mdi:gauge", None, SensorStateClass.MEASUREMENT, None, True),
-    ("wash_time", "Nível tempo lavagem", "mdi:numeric", None, SensorStateClass.MEASUREMENT, None, True),
-    ("dehydration_time", "Nível tempo centrifugação", "mdi:numeric", None, SensorStateClass.MEASUREMENT, None, True),
-    ("washing_data_hex", "Dados brutos do ciclo", "mdi:hexadecimal", None, None, None, True),
-)
 
 
 async def async_setup_entry(
@@ -35,46 +17,41 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    coordinator: MideaWasherCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(
-        [
-            WasherSensor(
-                coordinator,
-                entry,
-                key,
-                name,
-                icon,
-                device_class,
-                state_class,
-                unit,
-                diagnostic,
-            )
-            for key, name, icon, device_class, state_class, unit, diagnostic in _SENSORS
-        ]
-    )
+    device = hass.data[DOMAIN][entry.entry_id]["device"]
+    entities: list[WasherSensor] = []
+    for key in device.attributes:
+        attr = str(key)
+        if attr in SENSOR_SKIP:
+            continue
+        name, icon = SENSOR_LABELS.get(attr, (attr.replace("_", " ").title(), "mdi:eye"))
+        entities.append(WasherSensor(device, entry, attr, name, icon))
+    async_add_entities(entities)
 
 
 class WasherSensor(MideaWasherEntity, SensorEntity):
     def __init__(
         self,
-        coordinator: MideaWasherCoordinator,
+        device: Any,
         entry: ConfigEntry,
         key: str,
         name: str,
         icon: str,
-        device_class,
-        state_class,
-        unit,
-        diagnostic: bool = False,
     ) -> None:
-        super().__init__(coordinator, entry, key, name)
-        self._attr_icon = icon
-        self._attr_device_class = device_class
-        self._attr_state_class = state_class
-        self._attr_native_unit_of_measurement = unit
-        if diagnostic:
+        super().__init__(device, entry, key, name, icon)
+        if key not in PRIMARY_SENSORS:
             self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        if key in MINUTE_KEYS:
+            self._attr_native_unit_of_measurement = UnitOfTime.MINUTES
+            self._attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
-    def native_value(self):
-        return self.coordinator.data.get(self._key)
+    def native_value(self) -> Any:
+        value = self._device.get_attribute(self._key)
+        if self._key not in MINUTE_KEYS:
+            return value
+        if value is None:
+            return None
+        try:
+            return max(0, int(value))
+        except (TypeError, ValueError):
+            return None

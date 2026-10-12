@@ -3,34 +3,34 @@
     "step": {
       "user": {
         "title": "Login MSmartHome",
-        "description": "Use the same email/password as the {app} app. Token, key, model and host are filled automatically.",
+        "description": "Mesma conta do app {app}. Token/key/IP/modelo são obtidos automaticamente. Controle depois é 100% local (TCP longo sincronizado).",
         "data": {
-          "username": "Email / account",
-          "password": "Password"
+          "username": "Email / conta",
+          "password": "Senha"
         }
       },
       "select_device": {
-        "title": "Select washer",
+        "title": "Escolher lavadora",
         "data": {
-          "device_id": "Washer"
+          "device_id": "Aparelho"
         }
       },
       "host": {
-        "title": "Washer IP",
-        "description": "Could not find {name} ({device_id}) on LAN. Enter its IP. Keep MSmartHome closed.",
+        "title": "IP da lavadora",
+        "description": "Não achei {name} ({device_id}) no broadcast. Informe o IP. Feche o app MSmartHome.",
         "data": {
-          "host": "IP address"
+          "host": "Endereço IP"
         }
       }
     },
     "error": {
-      "invalid_auth": "Login failed. Check email/password for MSmartHome.",
-      "cannot_connect": "LAN connect failed. Check IP, close the app, and retry."
+      "invalid_auth": "Login falhou. Confira email/senha do MSmartHome.",
+      "cannot_connect": "Falha no TCP local. Confira IP, feche o app e tente de novo."
     },
     "abort": {
-      "no_washers_in_account": "No washer/dryer found in this cloud account.",
-      "token_failed": "Could not fetch local token/key from Midea cloud.",
-      "already_configured": "Device already configured."
+      "no_washers_in_account": "Nenhuma lavadora/secadora na conta.",
+      "token_failed": "Não foi possível obter token/key na nuvem Midea.",
+      "already_configured": "Aparelho já configurado."
     }
   }
 }
