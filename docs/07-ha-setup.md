@@ -2,6 +2,17 @@
 
 ## Instalação
 
+### Via HACS (recomendado)
+
+1. HACS → ⋮ → **Custom repositories**
+2. URL: `https://github.com/fcoelho84/HAC-midea`
+3. Category: **Integration**
+4. Baixe **Midea Washer (LAN)** (use a release `0.1.0`, não o commit)
+5. Reinicie o Home Assistant
+6. **Settings → Devices & services → Add integration → Midea Washer (LAN)**
+
+### Manual
+
 1. Copie `custom_components/midea_washer` para a pasta `custom_components` do HA:
 
 ```bash

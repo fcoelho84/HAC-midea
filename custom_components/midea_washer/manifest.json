@@ -1,9 +1,10 @@
 {
   "domain": "midea_washer",
   "name": "Midea Washer (LAN)",
-  "codeowners": ["@coelho"],
+  "codeowners": ["@fcoelho84"],
   "config_flow": true,
-  "documentation": "https://github.com/coelho/HAC-midea/blob/main/docs/07-ha-setup.md",
+  "documentation": "https://github.com/fcoelho84/HAC-midea/blob/main/docs/07-ha-setup.md",
+  "issue_tracker": "https://github.com/fcoelho84/HAC-midea/issues",
   "iot_class": "local_polling",
   "requirements": ["pycryptodome>=3.19.0"],
   "version": "0.1.0"
